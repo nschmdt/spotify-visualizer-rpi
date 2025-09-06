@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ræl - Spotify Visualizer</title>
+    <style>
+        body {
+    margin: 0;
+    padding: 0;
+    background: #000000;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: Arial, sans-serif;
+    cursor: none;
+}
+
+#login-container {
+    text-align: center;
+    color: white;
+    cursor: none;
+}
+
+#login-btn {
+    background: #1DB954;
+    color: white;
+    padding: 15px 30px;
+    border: none;
+    border-radius: 25px;
+    font-size: 16px;
+    cursor: none;
+    display: inline-block;
+    
+}
+
+#visualizer {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: #000000;
+    justify-content: center;
+    align-items: center;
+}
+
+#visualizer.active {
+    display: flex;
+}
+    </style>
+</head>
+
+<body>
+    <div id="login-container">
+        <h1>ræl</h1>
+        <p>Connect your Spotify to see the magic</p>
+        <button id="login-btn" onclick="loginWithSpotify()">Login with Spotify</button>
+    </div>
+
+        <div id="visualizer">
+            <canvas id="led-matrix"></canvas>
+            <button id="fullscreen-btn" onclick="goFullscreen()"
+                style="position: fixed; top: 10px; right: 10px; background: rgba(255,255,255,0.2); color: white; border: none; padding: 10px; border-radius: 5px; cursor: none;">⛶</button>
+        </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

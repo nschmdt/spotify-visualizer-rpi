@@ -1,0 +1,20 @@
+[Unit]
+Description=Spotify LED Matrix Visualizer
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/spotify-visualizer-rpi
+ExecStart=/usr/bin/python3 /home/pi/spotify-visualizer-rpi/spotify_visualizer.py
+Restart=always
+RestartSec=10
+Environment=PYTHONUNBUFFERED=1
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=spotify-visualizer
+
+[Install]
+WantedBy=multi-user.target
