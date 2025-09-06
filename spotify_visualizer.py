@@ -39,26 +39,26 @@ class SpotifyVisualizer:
         self.setup_matrix()
         
     def setup_matrix(self):
-        """Initialize the RGB matrix hardware"""
-        if not MATRIX_AVAILABLE:
-            print("Running in simulation mode - no physical matrix")
-            return
-            
-        try:
-            options = RGBMatrixOptions()
-            options.rows = MATRIX_SIZE
-            options.cols = MATRIX_SIZE
-            options.chain_length = 1
-            options.parallel = 1
-            options.hardware_mapping = 'adafruit-hat-pwm'
-            options.gpio_slowdown = 2  # Adjust if needed for stability
-            options.brightness = 50    # Adjust brightness (0-100)
-            
-            self.matrix = RGBMatrix(options=options)
-            print("RGB Matrix initialized successfully")
-        except Exception as e:
-            print(f"Failed to initialize RGB matrix: {e}")
-            self.matrix = None
+    """Initialize the RGB matrix hardware"""
+    if not MATRIX_AVAILABLE:
+        print("Running in simulation mode - no physical matrix")
+        return None
+        
+    try:
+        options = RGBMatrixOptions()
+        options.rows = MATRIX_SIZE
+        options.cols = MATRIX_SIZE
+        options.chain_length = 1
+        options.parallel = 1
+        options.hardware_mapping = 'adafruit-hat'  # Use the working mapping!
+        options.gpio_slowdown = 4
+        options.brightness = 20
+        
+        self.matrix = RGBMatrix(options=options)
+        print("RGB Matrix initialized successfully")
+    except Exception as e:
+        print(f"Failed to initialize RGB matrix: {e}")
+        self.matrix = None
 
     def generate_code_verifier(self, length=64):
         """Generate PKCE code verifier"""
