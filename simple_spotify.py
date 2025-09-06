@@ -17,7 +17,7 @@ def setup_matrix():
     options.rows = 32
     options.cols = 32
     options.gpio_slowdown = 4  # Reduce flickering
-    options.brightness = 80    # Much brighter! (was default ~50)
+    options.brightness = 100    # Much brighter! (was default ~50)
     options.pwm_bits = 8       # Better color depth
     options.pwm_lsb_nanoseconds = 200  # Smoother display
     return RGBMatrix(options=options)
