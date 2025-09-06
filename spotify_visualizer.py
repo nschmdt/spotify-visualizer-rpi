@@ -116,7 +116,7 @@ class SpotifyVisualizer:
                         self.end_headers()
                         self.wfile.write(b'''
                         <html><body style="font-family: Arial; text-align: center; padding: 50px; background: #1DB954; color: white;">
-                        <h1>✅ Authorization Complete!</h1>
+                        <h1>Authorization Complete!</h1>
                         <p>You can close this window and return to the terminal.</p>
                         </body></html>
                         ''')
