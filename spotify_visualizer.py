@@ -26,7 +26,7 @@ except ImportError:
 
 # Configuration
 CLIENT_ID = 'b245d267eebd4c97a090419d44fbd396'  # Same as your JS version
-REDIRECT_URI = 'http://localhost:8080/callback'
+REDIRECT_URI = 'http://127.0.0.1:8888'
 SCOPE = 'user-read-currently-playing'
 MATRIX_SIZE = 32
 REFRESH_INTERVAL = 1.0  # seconds
