@@ -135,23 +135,15 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
         # Add randomness
         delay = delay * random.uniform(0.2, 0.8)
         
-        # Get new pixel color
+        # Get new pixel color - no color correction, no blending
         r, g, b = new_image.getpixel((x, y))
         
-        # Simple color blending - ensure it reaches 100% new image
-        alpha = min(1.0, i / (total_pixels * 0.1))  # Changed from 0.2 to 0.1 for faster transition
-        old_r, old_g, old_b = old_image.getpixel((x, y))
-        
-        r = int(old_r * (1 - alpha) + r * alpha)
-        g = int(old_g * (1 - alpha) + g * alpha)
-        b = int(old_b * (1 - alpha) + b * alpha)
-        
-        # Direct pixel setting - no fading
+        # Direct pixel setting - no fading, no correction
         matrix.SetPixel(x, y, r, g, b)
         time.sleep(delay)
 
 def display_image(matrix, image):
-    """Display image on matrix with subtle color correction - no fading"""
+    """Display image on matrix - no color correction, no fading"""
     # Generate random positions to avoid left-to-right pattern
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
     random.shuffle(positions)
@@ -159,12 +151,7 @@ def display_image(matrix, image):
     for x, y in positions:
         r, g, b = image.getpixel((x, y))
         
-        # Subtle color correction - much less aggressive
-        r = int(r * 0.9)   # Slight red boost
-        g = int(g * 1.0)   # Green unchanged
-        b = int(b * 0.95)  # Slight blue reduction
-        
-        # Direct pixel setting - no fading
+        # Direct pixel setting - no correction, no fading
         matrix.SetPixel(x, y, r, g, b)
 
 def print_qr_code(url):
