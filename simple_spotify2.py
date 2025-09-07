@@ -114,49 +114,40 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
-def soft_chaotic_transition(matrix, old_image, new_image, duration=6.0):
-    """Gentle, organic pixel replacement with random appearance and LED fade-up"""
+def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
+    """Fast, truly random pixel replacement with LED fade-up"""
     
-    # Generate ALL pixel positions randomly (no wave pattern!)
-    positions = []
-    for x in range(MATRIX_SIZE):
-        for y in range(MATRIX_SIZE):
-            positions.append((x, y))
+    # Generate ALL pixel positions
+    positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
     
     # Shuffle for completely random appearance
     random.shuffle(positions)
     
-    # Calculate timing for 6 seconds total
+    # Much faster timing - 3 seconds total
     total_pixels = len(positions)
     base_delay = duration / total_pixels
     
-    # Accelerating timing - starts slow, gets faster
     for i, (x, y) in enumerate(positions):
-        # Calculate progress (0.0 to 1.0)
+        # Simple accelerating timing
         progress = i / total_pixels
+        delay = base_delay * (1.0 - progress * 0.7)  # Start slow, get faster
         
-        # Acceleration curve - starts slow, accelerates
-        acceleration_factor = progress * progress
-        
-        # Base delay starts high, gets lower as we progress
-        delay = base_delay * (1.0 - acceleration_factor * 0.6)  # 6s to 2.4s range
-        
-        # Add some randomness
-        delay = delay * random.uniform(0.5, 1.5)
+        # Add randomness
+        delay = delay * random.uniform(0.3, 1.0)
         
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
         
-        # Apply soft color blending (gentle fade-in)
-        alpha = min(1.0, i / (total_pixels * 0.3))  # Gentle fade-in
+        # Simple color blending
+        alpha = min(1.0, i / (total_pixels * 0.2))
         old_r, old_g, old_b = old_image.getpixel((x, y))
         
         r = int(old_r * (1 - alpha) + r * alpha)
         g = int(old_g * (1 - alpha) + g * alpha)
         b = int(old_b * (1 - alpha) + b * alpha)
         
-        # Fade up from black (smooth LED appearance)
-        fade_steps = 5  # Number of fade steps
+        # Quick fade up from black
+        fade_steps = 3
         for fade_step in range(fade_steps):
             fade_alpha = (fade_step + 1) / fade_steps
             fade_r = int(r * fade_alpha)
@@ -345,7 +336,7 @@ def main():
                                 else:
                                     # New track - soft chaotic transition
                                     print("🌊 Transitioning to new track...")
-                                    soft_chaotic_transition(matrix, current_image, new_image, duration=6.0)
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=3.0)
                                 
                                 current_image = new_image
                                 current_track_id = track_id
