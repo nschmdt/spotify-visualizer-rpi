@@ -114,7 +114,7 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
-def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
+def soft_chaotic_transition(matrix, old_image, new_image, duration=7.0):
     """Gentle, organic pixel replacement with soft randomness and acceleration"""
     
     # Create a gentle wave pattern for pixel replacement
@@ -140,7 +140,7 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
     # Shuffle for organic feel
     random.shuffle(positions)
     
-    # Accelerating timing - starts slow, gets faster
+    # Accelerating timing - starts slow, gets faster (5-10 seconds total)
     for i, (x, y) in enumerate(positions):
         # Calculate progress (0.0 to 1.0)
         progress = i / len(positions)
@@ -150,10 +150,11 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
         acceleration_factor = progress * progress
         
         # Base delay starts high, gets lower as we progress
-        base_delay = 0.1 * (1.0 - acceleration_factor * 0.8)  # 0.1s to 0.02s
+        # Adjusted for 5-10 second total duration
+        base_delay = 0.05 * (1.0 - acceleration_factor * 0.7)  # 0.05s to 0.015s
         
         # Add some randomness
-        delay = base_delay * random.uniform(0.7, 1.3)
+        delay = base_delay * random.uniform(0.8, 1.2)
         
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
@@ -166,11 +167,19 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
         g = int(old_g * (1 - alpha) + g * alpha)
         b = int(old_b * (1 - alpha) + b * alpha)
         
-        matrix.SetPixel(x, y, r, g, b)
-        time.sleep(delay)
+        # Fade up from black instead of binary on/off
+        fade_steps = 8  # Number of fade steps
+        for fade_step in range(fade_steps):
+            fade_alpha = (fade_step + 1) / fade_steps
+            fade_r = int(r * fade_alpha)
+            fade_g = int(g * fade_alpha)
+            fade_b = int(b * fade_alpha)
+            
+            matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
+            time.sleep(delay / fade_steps)
 
 def display_image(matrix, image):
-    """Display image on matrix with subtle color correction"""
+    """Display image on matrix with subtle color correction and fade-up"""
     for y in range(MATRIX_SIZE):
         for x in range(MATRIX_SIZE):
             r, g, b = image.getpixel((x, y))
@@ -180,7 +189,16 @@ def display_image(matrix, image):
             g = int(g * 1.0)   # Green unchanged
             b = int(b * 0.95)  # Slight blue reduction
             
-            matrix.SetPixel(x, y, r, g, b)
+            # Fade up from black instead of binary on/off
+            fade_steps = 6  # Number of fade steps
+            for fade_step in range(fade_steps):
+                fade_alpha = (fade_step + 1) / fade_steps
+                fade_r = int(r * fade_alpha)
+                fade_g = int(g * fade_alpha)
+                fade_b = int(b * fade_alpha)
+                
+                matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
+                time.sleep(0.01)  # Quick fade per pixel
 
 def print_qr_code(url):
     """Print QR code to terminal"""
@@ -339,7 +357,7 @@ def main():
                                 else:
                                     # New track - soft chaotic transition
                                     print("🌊 Transitioning to new track...")
-                                    soft_chaotic_transition(matrix, current_image, new_image, duration=3.0)
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=7.0)
                                 
                                 current_image = new_image
                                 current_track_id = track_id
