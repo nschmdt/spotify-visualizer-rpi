@@ -138,12 +138,19 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
         # Get new pixel color - no color correction, no blending
         r, g, b = new_image.getpixel((x, y))
         
-        # Direct pixel setting - no fading, no correction
-        matrix.SetPixel(x, y, r, g, b)
-        time.sleep(delay)
+        # Fade up from black (smooth LED appearance)
+        fade_steps = 4  # Number of fade steps
+        for fade_step in range(fade_steps):
+            fade_alpha = (fade_step + 1) / fade_steps
+            fade_r = int(r * fade_alpha)
+            fade_g = int(g * fade_alpha)
+            fade_b = int(b * fade_alpha)
+            
+            matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
+            time.sleep(delay / fade_steps)
 
 def display_image(matrix, image):
-    """Display image on matrix - no color correction, no fading"""
+    """Display image on matrix with fade-up from black"""
     # Generate random positions to avoid left-to-right pattern
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
     random.shuffle(positions)
@@ -151,8 +158,16 @@ def display_image(matrix, image):
     for x, y in positions:
         r, g, b = image.getpixel((x, y))
         
-        # Direct pixel setting - no correction, no fading
-        matrix.SetPixel(x, y, r, g, b)
+        # Fade up from black (smooth LED appearance)
+        fade_steps = 4  # Number of fade steps
+        for fade_step in range(fade_steps):
+            fade_alpha = (fade_step + 1) / fade_steps
+            fade_r = int(r * fade_alpha)
+            fade_g = int(g * fade_alpha)
+            fade_b = int(b * fade_alpha)
+            
+            matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
+            time.sleep(0.01)  # Quick fade per pixel
 
 def print_qr_code(url):
     """Print QR code to terminal"""
@@ -305,8 +320,12 @@ def main():
                                 new_image = new_image.resize((MATRIX_SIZE, MATRIX_SIZE), Image.Resampling.LANCZOS)
                                 
                                 # Display with transition if new track
-                                if current_image is None or not is_new_track:
-                                    # First image or same track - direct display
+                                if current_image is None:
+                                    # First image - transition from black
+                                    print("🌊 Loading first track...")
+                                    display_image(matrix, new_image)
+                                elif not is_new_track:
+                                    # Same track - direct display
                                     display_image(matrix, new_image)
                                 else:
                                     # New track - soft chaotic transition
@@ -325,7 +344,7 @@ def main():
             else:
                 print("No track currently playing")
             
-            time.sleep(1)  # Check every 1 second
+            time.sleep(0.5)  # Check every 0.5 seconds for faster response
     else:
         print(f"❌ Authentication failed: {response.status_code} - {response.text}")
 
