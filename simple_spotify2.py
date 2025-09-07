@@ -114,8 +114,8 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
-def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
-    """Fast, truly random pixel replacement with LED fade-up"""
+def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
+    """Fast, truly random pixel replacement - no fading"""
     
     # Generate ALL pixel positions
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
@@ -123,7 +123,7 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
     # Shuffle for completely random appearance
     random.shuffle(positions)
     
-    # Much faster timing - 3 seconds total
+    # Fast timing - 2 seconds total
     total_pixels = len(positions)
     base_delay = duration / total_pixels
     
@@ -133,7 +133,7 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
         delay = base_delay * (1.0 - progress * 0.7)  # Start slow, get faster
         
         # Add randomness
-        delay = delay * random.uniform(0.3, 1.0)
+        delay = delay * random.uniform(0.2, 0.8)
         
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
@@ -146,38 +146,26 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
         g = int(old_g * (1 - alpha) + g * alpha)
         b = int(old_b * (1 - alpha) + b * alpha)
         
-        # Quick fade up from black
-        fade_steps = 3
-        for fade_step in range(fade_steps):
-            fade_alpha = (fade_step + 1) / fade_steps
-            fade_r = int(r * fade_alpha)
-            fade_g = int(g * fade_alpha)
-            fade_b = int(b * fade_alpha)
-            
-            matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
-            time.sleep(delay / fade_steps)
+        # Direct pixel setting - no fading
+        matrix.SetPixel(x, y, r, g, b)
+        time.sleep(delay)
 
 def display_image(matrix, image):
-    """Display image on matrix with subtle color correction and fade-up"""
-    for y in range(MATRIX_SIZE):
-        for x in range(MATRIX_SIZE):
-            r, g, b = image.getpixel((x, y))
-            
-            # Subtle color correction - much less aggressive
-            r = int(r * 0.9)   # Slight red boost
-            g = int(g * 1.0)   # Green unchanged
-            b = int(b * 0.95)  # Slight blue reduction
-            
-            # Fade up from black instead of binary on/off
-            fade_steps = 6  # Number of fade steps
-            for fade_step in range(fade_steps):
-                fade_alpha = (fade_step + 1) / fade_steps
-                fade_r = int(r * fade_alpha)
-                fade_g = int(g * fade_alpha)
-                fade_b = int(b * fade_alpha)
-                
-                matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
-                time.sleep(0.01)  # Quick fade per pixel
+    """Display image on matrix with subtle color correction - no fading"""
+    # Generate random positions to avoid left-to-right pattern
+    positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
+    random.shuffle(positions)
+    
+    for x, y in positions:
+        r, g, b = image.getpixel((x, y))
+        
+        # Subtle color correction - much less aggressive
+        r = int(r * 0.9)   # Slight red boost
+        g = int(g * 1.0)   # Green unchanged
+        b = int(b * 0.95)  # Slight blue reduction
+        
+        # Direct pixel setting - no fading
+        matrix.SetPixel(x, y, r, g, b)
 
 def print_qr_code(url):
     """Print QR code to terminal"""
@@ -336,7 +324,7 @@ def main():
                                 else:
                                     # New track - soft chaotic transition
                                     print("🌊 Transitioning to new track...")
-                                    soft_chaotic_transition(matrix, current_image, new_image, duration=3.0)
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=2.0)
                                 
                                 current_image = new_image
                                 current_track_id = track_id
