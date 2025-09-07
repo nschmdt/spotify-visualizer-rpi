@@ -114,61 +114,49 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
-def soft_chaotic_transition(matrix, old_image, new_image, duration=7.0):
-    """Gentle, organic pixel replacement with soft randomness and acceleration"""
+def soft_chaotic_transition(matrix, old_image, new_image, duration=6.0):
+    """Gentle, organic pixel replacement with random appearance and LED fade-up"""
     
-    # Create a gentle wave pattern for pixel replacement
-    wave_centers = [
-        (8, 8), (24, 8), (8, 24), (24, 24), (16, 16)  # Multiple wave centers
-    ]
-    
-    # Generate pixel positions with soft randomness
+    # Generate ALL pixel positions randomly (no wave pattern!)
     positions = []
-    for center_x, center_y in wave_centers:
-        for radius in range(0, 20, 2):  # Gentle expansion
-            for angle in range(0, 360, 15):  # Smooth rotation
-                # Add soft randomness to position
-                noise_x = random.uniform(-1, 1)
-                noise_y = random.uniform(-1, 1)
-                
-                x = int(center_x + radius * math.cos(math.radians(angle)) + noise_x)
-                y = int(center_y + radius * math.sin(math.radians(angle)) + noise_y)
-                
-                if 0 <= x < MATRIX_SIZE and 0 <= y < MATRIX_SIZE:
-                    positions.append((x, y))
+    for x in range(MATRIX_SIZE):
+        for y in range(MATRIX_SIZE):
+            positions.append((x, y))
     
-    # Shuffle for organic feel
+    # Shuffle for completely random appearance
     random.shuffle(positions)
     
-    # Accelerating timing - starts slow, gets faster (5-10 seconds total)
+    # Calculate timing for 6 seconds total
+    total_pixels = len(positions)
+    base_delay = duration / total_pixels
+    
+    # Accelerating timing - starts slow, gets faster
     for i, (x, y) in enumerate(positions):
         # Calculate progress (0.0 to 1.0)
-        progress = i / len(positions)
+        progress = i / total_pixels
         
         # Acceleration curve - starts slow, accelerates
-        # Use a quadratic curve for smooth acceleration
         acceleration_factor = progress * progress
         
         # Base delay starts high, gets lower as we progress
-        # Adjusted for 5-10 second total duration
-        base_delay = 0.05 * (1.0 - acceleration_factor * 0.7)  # 0.05s to 0.015s
+        delay = base_delay * (1.0 - acceleration_factor * 0.6)  # 6s to 2.4s range
         
         # Add some randomness
-        delay = base_delay * random.uniform(0.8, 1.2)
+        delay = delay * random.uniform(0.5, 1.5)
         
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
         
         # Apply soft color blending (gentle fade-in)
-        alpha = min(1.0, i / (len(positions) * 0.3))  # Gentle fade-in
+        alpha = min(1.0, i / (total_pixels * 0.3))  # Gentle fade-in
         old_r, old_g, old_b = old_image.getpixel((x, y))
         
         r = int(old_r * (1 - alpha) + r * alpha)
         g = int(old_g * (1 - alpha) + g * alpha)
         b = int(old_b * (1 - alpha) + b * alpha)
         
-        # Fade up from black instead of binary on/off
-        fade_steps = 8  # Number of fade steps
+        # Fade up from black (smooth LED appearance)
+        fade_steps = 5  # Number of fade steps
         for fade_step in range(fade_steps):
             fade_alpha = (fade_step + 1) / fade_steps
             fade_r = int(r * fade_alpha)
@@ -357,7 +345,7 @@ def main():
                                 else:
                                     # New track - soft chaotic transition
                                     print("🌊 Transitioning to new track...")
-                                    soft_chaotic_transition(matrix, current_image, new_image, duration=7.0)
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=6.0)
                                 
                                 current_image = new_image
                                 current_track_id = track_id
