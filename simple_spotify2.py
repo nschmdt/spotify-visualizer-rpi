@@ -114,8 +114,8 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
-def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
-    """Gentle, organic pixel replacement with soft randomness"""
+def soft_chaotic_transition(matrix, old_image, new_image, duration=3.0):
+    """Gentle, organic pixel replacement with soft randomness and acceleration"""
     
     # Create a gentle wave pattern for pixel replacement
     wave_centers = [
@@ -140,12 +140,20 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
     # Shuffle for organic feel
     random.shuffle(positions)
     
-    # Gentle timing with slight variation
-    base_delay = duration / len(positions)
-    
+    # Accelerating timing - starts slow, gets faster
     for i, (x, y) in enumerate(positions):
-        # Soft timing variation
-        delay = base_delay * random.uniform(0.5, 1.5)
+        # Calculate progress (0.0 to 1.0)
+        progress = i / len(positions)
+        
+        # Acceleration curve - starts slow, accelerates
+        # Use a quadratic curve for smooth acceleration
+        acceleration_factor = progress * progress
+        
+        # Base delay starts high, gets lower as we progress
+        base_delay = 0.1 * (1.0 - acceleration_factor * 0.8)  # 0.1s to 0.02s
+        
+        # Add some randomness
+        delay = base_delay * random.uniform(0.7, 1.3)
         
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
@@ -162,15 +170,15 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
         time.sleep(delay)
 
 def display_image(matrix, image):
-    """Display image on matrix with color correction"""
+    """Display image on matrix with subtle color correction"""
     for y in range(MATRIX_SIZE):
         for x in range(MATRIX_SIZE):
             r, g, b = image.getpixel((x, y))
             
-            # Apply luminance weighting for better visibility
-            r = int(r * 0.21)  # Red is less visible
-            g = int(g * 0.70)  # Green is most visible  
-            b = int(b * 0.09)  # Blue is least visible
+            # Subtle color correction - much less aggressive
+            r = int(r * 0.9)   # Slight red boost
+            g = int(g * 1.0)   # Green unchanged
+            b = int(b * 0.95)  # Slight blue reduction
             
             matrix.SetPixel(x, y, r, g, b)
 
@@ -331,7 +339,7 @@ def main():
                                 else:
                                     # New track - soft chaotic transition
                                     print("🌊 Transitioning to new track...")
-                                    soft_chaotic_transition(matrix, current_image, new_image, duration=2.0)
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=3.0)
                                 
                                 current_image = new_image
                                 current_track_id = track_id
