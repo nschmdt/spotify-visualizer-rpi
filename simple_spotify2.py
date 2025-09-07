@@ -138,8 +138,8 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
         
-        # Simple color blending
-        alpha = min(1.0, i / (total_pixels * 0.2))
+        # Simple color blending - ensure it reaches 100% new image
+        alpha = min(1.0, i / (total_pixels * 0.1))  # Changed from 0.2 to 0.1 for faster transition
         old_r, old_g, old_b = old_image.getpixel((x, y))
         
         r = int(old_r * (1 - alpha) + r * alpha)
