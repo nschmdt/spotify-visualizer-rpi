@@ -4,6 +4,12 @@ import requests
 from rgbmatrix import RGBMatrix, RGBMatrixOptions
 from PIL import Image
 import io
+import webbrowser
+import threading
+from http.server import HTTPServer, BaseHTTPRequestHandler
+from urllib.parse import urlparse, parse_qs
+import sys
+import os
 
 # Configuration
 CLIENT_ID = 'b245d267eebd4c97a090419d44fbd396'
@@ -21,6 +27,64 @@ def setup_matrix():
     options.pwm_bits = 8       # Better color depth
     options.pwm_lsb_nanoseconds = 200  # Smoother display
     return RGBMatrix(options=options)
+
+# Global variables for callback handling
+auth_code = None
+auth_error = None
+
+class CallbackHandler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        global auth_code, auth_error
+        
+        # Parse the callback URL
+        parsed_url = urlparse(self.path)
+        params = parse_qs(parsed_url.query)
+        
+        if 'code' in params:
+            auth_code = params['code'][0]
+            self.send_response(200)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"""
+            <html>
+                <head><title>Spotify Authorization</title></head>
+                <body>
+                    <h1>Authorization Successful!</h1>
+                    <p>You can now close this tab and return to the terminal.</p>
+                    <script>setTimeout(function(){ window.close(); }, 2000);</script>
+                </body>
+            </html>
+            """)
+        elif 'error' in params:
+            auth_error = params['error'][0]
+            self.send_response(400)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"""
+            <html>
+                <head><title>Spotify Authorization Error</title></head>
+                <body>
+                    <h1>Authorization Failed</h1>
+                    <p>Error: """ + auth_error.encode() + b"""</p>
+                    <p>You can close this tab and try again.</p>
+                </body>
+            </html>
+            """)
+        else:
+            self.send_response(400)
+            self.send_header('Content-type', 'text/html')
+            self.end_headers()
+            self.wfile.write(b"Invalid callback")
+    
+    def log_message(self, format, *args):
+        # Suppress HTTP server logs
+        pass
+
+def start_callback_server():
+    server = HTTPServer(('127.0.0.1', 8888), CallbackHandler)
+    server.timeout = 60  # 1 minute timeout
+    server.handle_request()
+    server.server_close()
 
 def get_authorization_url():
     # Generate a simple code verifier
@@ -46,6 +110,29 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
+def print_qr_code(url):
+    """Print QR code to terminal"""
+    try:
+        import qrcode
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=1,
+            border=1,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
+        
+        # Print QR code using ASCII characters
+        qr.print_ascii(out=sys.stdout, tty=False, invert=True)
+        return True
+    except ImportError:
+        print("⚠️  QR code module not installed. Install with: pip3 install qrcode[pil]")
+        return False
+    except Exception as e:
+        print(f"⚠️  Could not generate QR code: {e}")
+        return False
+
 def main():
     print("Simple Spotify Visualizer")
     print("=" * 40)
@@ -57,18 +144,62 @@ def main():
     # Get authorization URL
     auth_url, code_verifier = get_authorization_url()
     
-    print(f"\n Please visit this URL in your browser:")
-    print(f"{auth_url}\n")
+    print(f"\n🚀 Spotify Authorization Required")
+    print("=" * 50)
     
-    print("After logging in, you'll be redirected to a page that says 'can't connect'")
-    print("That's normal! Copy the 'code' parameter from the URL and paste it here:")
+    # Check if running over SSH and provide better instructions
+    ssh_session = 'SSH_CLIENT' in os.environ or 'SSH_TTY' in os.environ
+    if ssh_session:
+        print("🔗 Detected SSH session! For the smoothest experience:")
+        print("   Option 1: SSH with port forwarding: ssh -L 8888:localhost:8888 pi@your-pi")
+        print("   Option 2: Scan QR code with your phone")
+        print("   Option 3: Copy URL to your local browser")
+        print()
     
-    # Get the code from user
-    code = input("Enter the authorization code: ").strip()
+    # Start the callback server in a separate thread
+    global auth_code, auth_error
+    auth_code = None
+    auth_error = None
     
-    if not code:
-        print("No code provided. Exiting.")
+    server_thread = threading.Thread(target=start_callback_server)
+    server_thread.daemon = True
+    server_thread.start()
+    
+    # Show QR code for easy mobile access
+    print("📱 Scan this QR code with your phone:")
+    print()
+    if print_qr_code(auth_url):
+        print()
+        print("📱 Or manually visit:")
+    else:
+        print("📋 Please visit this URL:")
+    
+    print(f"🔗 {auth_url}")
+    print()
+    
+    # Try to open browser (works locally, not over SSH)
+    if not ssh_session:
+        try:
+            webbrowser.open(auth_url)
+            print("✅ Browser opened automatically")
+        except Exception:
+            pass
+    
+    print("⏱️  Waiting for authorization (60 seconds timeout)...")
+    
+    # Wait for the callback
+    server_thread.join(timeout=60)
+    
+    if auth_error:
+        print(f"❌ Authorization failed: {auth_error}")
         return
+    
+    if not auth_code:
+        print("❌ No authorization code received. Please try again.")
+        return
+    
+    code = auth_code
+    print("✅ Authorization code received automatically!")
     
     # Exchange code for token
     data = {
