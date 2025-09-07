@@ -114,18 +114,8 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
-def fade_pixel(matrix, x, y, target_r, target_g, target_b, steps=6):
-    """Fade a single pixel using hardware PWM"""
-    for step in range(steps):
-        alpha = (step + 1) / steps
-        r = int(target_r * alpha)
-        g = int(target_g * alpha) 
-        b = int(target_b * alpha)
-        matrix.SetPixel(x, y, r, g, b)
-        time.sleep(0.005)  # Very short delay
-
-def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
-    """Fast, truly random pixel replacement with smooth fading"""
+def soft_chaotic_transition(matrix, old_image, new_image, duration=1.0):
+    """Fast, truly random pixel replacement - no fading"""
     
     # Generate ALL pixel positions
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
@@ -133,7 +123,7 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
     # Shuffle for completely random appearance
     random.shuffle(positions)
     
-    # Fast timing - 2 seconds total
+    # Very fast timing - 1 second total
     total_pixels = len(positions)
     base_delay = duration / total_pixels
     
@@ -143,17 +133,17 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
         delay = base_delay * (1.0 - progress * 0.7)  # Start slow, get faster
         
         # Add randomness
-        delay = delay * random.uniform(0.2, 0.8)
+        delay = delay * random.uniform(0.1, 0.5)
         
         # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
         
-        # Fade pixel smoothly
-        fade_pixel(matrix, x, y, r, g, b, steps=6)
+        # Direct pixel setting - no fading
+        matrix.SetPixel(x, y, r, g, b)
         time.sleep(delay)
 
 def display_image(matrix, image):
-    """Display image on matrix with smooth fading"""
+    """Display image on matrix - fast and direct"""
     # Generate random positions to avoid left-to-right pattern
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
     random.shuffle(positions)
@@ -161,8 +151,8 @@ def display_image(matrix, image):
     for x, y in positions:
         r, g, b = image.getpixel((x, y))
         
-        # Fade pixel smoothly
-        fade_pixel(matrix, x, y, r, g, b, steps=6)
+        # Direct pixel setting - no fading
+        matrix.SetPixel(x, y, r, g, b)
 
 def print_qr_code(url):
     """Print QR code to terminal"""
@@ -325,7 +315,7 @@ def main():
                                 else:
                                     # New track - soft chaotic transition
                                     print("🌊 Transitioning to new track...")
-                                    soft_chaotic_transition(matrix, current_image, new_image, duration=2.0)
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=1.0)
                                 
                                 current_image = new_image
                                 current_track_id = track_id
