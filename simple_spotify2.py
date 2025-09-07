@@ -10,6 +10,8 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from urllib.parse import urlparse, parse_qs
 import sys
 import os
+import random
+import math
 
 # Configuration
 CLIENT_ID = 'b245d267eebd4c97a090419d44fbd396'
@@ -112,6 +114,66 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
+def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
+    """Gentle, organic pixel replacement with soft randomness"""
+    
+    # Create a gentle wave pattern for pixel replacement
+    wave_centers = [
+        (8, 8), (24, 8), (8, 24), (24, 24), (16, 16)  # Multiple wave centers
+    ]
+    
+    # Generate pixel positions with soft randomness
+    positions = []
+    for center_x, center_y in wave_centers:
+        for radius in range(0, 20, 2):  # Gentle expansion
+            for angle in range(0, 360, 15):  # Smooth rotation
+                # Add soft randomness to position
+                noise_x = random.uniform(-1, 1)
+                noise_y = random.uniform(-1, 1)
+                
+                x = int(center_x + radius * math.cos(math.radians(angle)) + noise_x)
+                y = int(center_y + radius * math.sin(math.radians(angle)) + noise_y)
+                
+                if 0 <= x < MATRIX_SIZE and 0 <= y < MATRIX_SIZE:
+                    positions.append((x, y))
+    
+    # Shuffle for organic feel
+    random.shuffle(positions)
+    
+    # Gentle timing with slight variation
+    base_delay = duration / len(positions)
+    
+    for i, (x, y) in enumerate(positions):
+        # Soft timing variation
+        delay = base_delay * random.uniform(0.5, 1.5)
+        
+        # Get new pixel color
+        r, g, b = new_image.getpixel((x, y))
+        
+        # Apply soft color blending (gentle fade-in)
+        alpha = min(1.0, i / (len(positions) * 0.3))  # Gentle fade-in
+        old_r, old_g, old_b = old_image.getpixel((x, y))
+        
+        r = int(old_r * (1 - alpha) + r * alpha)
+        g = int(old_g * (1 - alpha) + g * alpha)
+        b = int(old_b * (1 - alpha) + b * alpha)
+        
+        matrix.SetPixel(x, y, r, g, b)
+        time.sleep(delay)
+
+def display_image(matrix, image):
+    """Display image on matrix with color correction"""
+    for y in range(MATRIX_SIZE):
+        for x in range(MATRIX_SIZE):
+            r, g, b = image.getpixel((x, y))
+            
+            # Apply luminance weighting for better visibility
+            r = int(r * 0.21)  # Red is less visible
+            g = int(g * 0.70)  # Green is most visible  
+            b = int(b * 0.09)  # Blue is least visible
+            
+            matrix.SetPixel(x, y, r, g, b)
+
 def print_qr_code(url):
     """Print QR code to terminal"""
     try:
@@ -187,7 +249,7 @@ def main():
         except Exception:
             pass
     
-    print("⏱️  Waiting for automatic authorization (30 seconds)...")
+    print("⏱️  Waiting for automatic authorization (5 seconds)...")
     
     # Wait for the callback
     server_thread.join(timeout=5)
@@ -231,6 +293,9 @@ def main():
         
         # Start the visualizer loop
         print("🎵 Starting visualizer loop...")
+        current_image = None
+        current_track_id = None
+        
         while True:
             headers = {'Authorization': f'Bearer {access_token}'}
             response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
@@ -239,27 +304,38 @@ def main():
                 track_data = response.json()
                 if track_data and track_data.get('item'):
                     track = track_data['item']
+                    track_id = track.get('id')
                     album = track.get('album', {})
                     images = album.get('images', [])
+                    
+                    # Check if this is a new track
+                    is_new_track = track_id != current_track_id
                     
                     if images:
                         image_url = images[0]['url']
                         print(f"🎵 Now playing: {track['name']} by {track['artists'][0]['name']}")
                         
-                        # Download and display image
+                        # Download and process image
                         try:
                             img_response = requests.get(image_url, timeout=10)
                             if img_response.status_code == 200:
-                                image = Image.open(io.BytesIO(img_response.content))
-                                if image.mode != 'RGB':
-                                    image = image.convert('RGB')
-                                image = image.resize((MATRIX_SIZE, MATRIX_SIZE), Image.Resampling.LANCZOS)
+                                new_image = Image.open(io.BytesIO(img_response.content))
+                                if new_image.mode != 'RGB':
+                                    new_image = new_image.convert('RGB')
+                                new_image = new_image.resize((MATRIX_SIZE, MATRIX_SIZE), Image.Resampling.LANCZOS)
                                 
-                                # Display on matrix
-                                for y in range(MATRIX_SIZE):
-                                    for x in range(MATRIX_SIZE):
-                                        r, g, b = image.getpixel((x, y))
-                                        matrix.SetPixel(x, y, r, g, b)
+                                # Display with transition if new track
+                                if current_image is None or not is_new_track:
+                                    # First image or same track - direct display
+                                    display_image(matrix, new_image)
+                                else:
+                                    # New track - soft chaotic transition
+                                    print("🌊 Transitioning to new track...")
+                                    soft_chaotic_transition(matrix, current_image, new_image, duration=2.0)
+                                
+                                current_image = new_image
+                                current_track_id = track_id
+                                
                         except Exception as e:
                             print(f"Error processing image: {e}")
                     else:
@@ -269,7 +345,7 @@ def main():
             else:
                 print("No track currently playing")
             
-            time.sleep(1)
+            time.sleep(1)  # Check every 1 second
     else:
         print(f"❌ Authentication failed: {response.status_code} - {response.text}")
 
