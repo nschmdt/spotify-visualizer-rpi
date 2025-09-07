@@ -114,8 +114,18 @@ def get_authorization_url():
     auth_url = f"https://accounts.spotify.com/authorize?{urlencode(params)}"
     return auth_url, code_verifier
 
+def fade_pixel(matrix, x, y, target_r, target_g, target_b, steps=6):
+    """Fade a single pixel using hardware PWM"""
+    for step in range(steps):
+        alpha = (step + 1) / steps
+        r = int(target_r * alpha)
+        g = int(target_g * alpha) 
+        b = int(target_b * alpha)
+        matrix.SetPixel(x, y, r, g, b)
+        time.sleep(0.005)  # Very short delay
+
 def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
-    """Fast, truly random pixel replacement - no fading"""
+    """Fast, truly random pixel replacement with smooth fading"""
     
     # Generate ALL pixel positions
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
@@ -135,22 +145,15 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=2.0):
         # Add randomness
         delay = delay * random.uniform(0.2, 0.8)
         
-        # Get new pixel color - no color correction, no blending
+        # Get new pixel color
         r, g, b = new_image.getpixel((x, y))
         
-        # Fade up from black (smooth LED appearance)
-        fade_steps = 4  # Number of fade steps
-        for fade_step in range(fade_steps):
-            fade_alpha = (fade_step + 1) / fade_steps
-            fade_r = int(r * fade_alpha)
-            fade_g = int(g * fade_alpha)
-            fade_b = int(b * fade_alpha)
-            
-            matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
-            time.sleep(delay / fade_steps)
+        # Fade pixel smoothly
+        fade_pixel(matrix, x, y, r, g, b, steps=6)
+        time.sleep(delay)
 
 def display_image(matrix, image):
-    """Display image on matrix with fade-up from black"""
+    """Display image on matrix with smooth fading"""
     # Generate random positions to avoid left-to-right pattern
     positions = [(x, y) for x in range(MATRIX_SIZE) for y in range(MATRIX_SIZE)]
     random.shuffle(positions)
@@ -158,16 +161,8 @@ def display_image(matrix, image):
     for x, y in positions:
         r, g, b = image.getpixel((x, y))
         
-        # Fade up from black (smooth LED appearance)
-        fade_steps = 4  # Number of fade steps
-        for fade_step in range(fade_steps):
-            fade_alpha = (fade_step + 1) / fade_steps
-            fade_r = int(r * fade_alpha)
-            fade_g = int(g * fade_alpha)
-            fade_b = int(b * fade_alpha)
-            
-            matrix.SetPixel(x, y, fade_r, fade_g, fade_b)
-            time.sleep(0.01)  # Quick fade per pixel
+        # Fade pixel smoothly
+        fade_pixel(matrix, x, y, r, g, b, steps=6)
 
 def print_qr_code(url):
     """Print QR code to terminal"""
