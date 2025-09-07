@@ -190,7 +190,7 @@ def main():
     print("⏱️  Waiting for automatic authorization (30 seconds)...")
     
     # Wait for the callback
-    server_thread.join(timeout=30)
+    server_thread.join(timeout=5)
     
     if auth_error:
         print(f"❌ Authorization failed: {auth_error}")
