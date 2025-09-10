@@ -16,7 +16,7 @@ import math
 # Configuration
 CLIENT_ID = 'b245d267eebd4c97a090419d44fbd396'
 REDIRECT_URI = 'http://127.0.0.1:8888/callback'
-SCOPE = 'user-read-currently-playing'
+SCOPE = 'user-read-currently-playing offline_access'
 MATRIX_SIZE = 32
 
 def setup_matrix():
@@ -188,6 +188,21 @@ def print_qr_code(url):
         print(f"⚠️  Could not generate QR code: {e}")
         return False
 
+def refresh_access_token(refresh_token):
+    """Refresh the Spotify access token using the stored refresh_token."""
+    data = {
+        'grant_type': 'refresh_token',
+        'refresh_token': refresh_token,
+        'client_id': CLIENT_ID,
+    }
+    try:
+        resp = requests.post('https://accounts.spotify.com/api/token', data=data, timeout=10)
+        if resp.status_code == 200:
+            return resp.json()
+    except Exception:
+        pass
+    return None
+
 def main():
     print("🚀 Simple Spotify Visualizer")
     print("=" * 40)
@@ -280,6 +295,7 @@ def main():
     if response.status_code == 200:
         token_data = response.json()
         access_token = token_data['access_token']
+        refresh_token_val = token_data.get('refresh_token')
         print("✅ Successfully authenticated with Spotify!")
         
         # Start the visualizer loop
@@ -289,7 +305,26 @@ def main():
         
         while True:
             headers = {'Authorization': f'Bearer {access_token}'}
+            # Testing hook: force a 401 occasionally to exercise refresh path
+            if os.environ.get('FORCE_EXPIRE') == '1' and int(time.time()) % 15 == 0:
+                print('⚙️ Forcing token expiry test (injecting invalid token)')
+                headers = {'Authorization': 'Bearer invalid_token'}
             response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
+            
+            # If token expired, refresh and retry once
+            if response.status_code == 401 and refresh_token_val:
+                print("🔄 Access token expired. Refreshing...")
+                refreshed = refresh_access_token(refresh_token_val)
+                if refreshed and refreshed.get('access_token'):
+                    access_token = refreshed['access_token']
+                    # Some refreshes may also return a new refresh token
+                    if refreshed.get('refresh_token'):
+                        refresh_token_val = refreshed['refresh_token']
+                    headers = {'Authorization': f'Bearer {access_token}'}
+                    response = requests.get('https://api.spotify.com/v1/me/player/currently-playing', headers=headers)
+                else:
+                    print("❌ Failed to refresh token. Please re-authenticate.")
+                    break
             
             if response.status_code == 200:
                 track_data = response.json()
