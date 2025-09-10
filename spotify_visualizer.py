@@ -107,7 +107,7 @@ class SpotifyVisualizer:
                     
                     if 'code' in query_params:
                         code = query_params['code'][0]
-                        print(f"\n✅ Authorization code received: {code}")
+                        print(f"\n Authorization code received: {code}")
                         
                         # Save code to file
                         with open('.auth_code', 'w') as f:
@@ -124,7 +124,7 @@ class SpotifyVisualizer:
                         </body></html>
                         ''')
                     else:
-                        print(f"\n❌ No authorization code found")
+                        print(f"\n No authorization code found")
                         self.send_response(400)
                         self.end_headers()
                 else:

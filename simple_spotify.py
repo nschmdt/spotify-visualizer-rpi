@@ -23,9 +23,10 @@ def setup_matrix():
     options.rows = 32
     options.cols = 32
     options.gpio_slowdown = 4  # Reduce flickering
-    options.brightness = 100    # Much brighter! (was default ~50)
-    options.pwm_bits = 8       # Better color depth
-    options.pwm_lsb_nanoseconds = 200  # Smoother display
+    options.brightness = 100    # Max brightness for daylight
+    options.pwm_bits = 6       # Fewer bits = higher apparent brightness
+    options.pwm_lsb_nanoseconds = 100  # Faster PWM for brighter look
+    options.limit_refresh_rate_hz = 200  # Higher refresh
     return RGBMatrix(options=options)
 
 # Global variables for callback handling
@@ -247,6 +248,11 @@ def main():
                                 for y in range(MATRIX_SIZE):
                                     for x in range(MATRIX_SIZE):
                                         r, g, b = image.getpixel((x, y))
+                                        # Apply a small gain for daylight visibility
+                                        gain = 1.25
+                                        r = 255 if r * gain > 255 else int(r * gain)
+                                        g = 255 if g * gain > 255 else int(g * gain)
+                                        b = 255 if b * gain > 255 else int(b * gain)
                                         matrix.SetPixel(x, y, r, g, b)
                         except Exception as e:
                             print(f"Error processing image: {e}")
