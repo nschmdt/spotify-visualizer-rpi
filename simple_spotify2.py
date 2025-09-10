@@ -140,11 +140,6 @@ def soft_chaotic_transition(matrix, old_image, new_image, duration=1.0):
         r, g, b = new_image.getpixel((x, y))
         
         # Direct pixel setting - no fading
-        # Apply a small gain for daylight visibility
-        gain = 1.25
-        r = 255 if r * gain > 255 else int(r * gain)
-        g = 255 if g * gain > 255 else int(g * gain)
-        b = 255 if b * gain > 255 else int(b * gain)
         matrix.SetPixel(x, y, r, g, b)
         time.sleep(delay)
 
@@ -158,11 +153,6 @@ def display_image(matrix, image):
         r, g, b = image.getpixel((x, y))
         
         # Direct pixel setting - no fading
-        # Apply a small gain for daylight visibility
-        gain = 1
-        r = 255 if r * gain > 255 else int(r * gain)
-        g = 255 if g * gain > 255 else int(g * gain)
-        b = 255 if b * gain > 255 else int(b * gain)
         matrix.SetPixel(x, y, r, g, b)
 
 def print_qr_code(url):
