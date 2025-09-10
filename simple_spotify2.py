@@ -16,7 +16,7 @@ import math
 # Configuration
 CLIENT_ID = 'b245d267eebd4c97a090419d44fbd396'
 REDIRECT_URI = 'http://127.0.0.1:8888/callback'
-SCOPE = 'user-read-currently-playing offline_access'
+SCOPE = 'user-read-currently-playing'
 MATRIX_SIZE = 32
 
 def setup_matrix():
